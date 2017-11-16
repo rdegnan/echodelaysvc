@@ -5,4 +5,5 @@ object Versions {
   val logbackClassicV = "1.1.3"
   val json4sV = "3.5.0"
   val akkaHttpJson4sV = "1.11.0"
+  val proteusV = "0.2.4"
 }

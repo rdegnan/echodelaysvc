@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package org.squbs.echodelaysvc;
+
+option java_outer_classname = "ServiceProto";
+option java_multiple_files = true;
+
+service EchoDelayService {
+    rpc hello (HelloRequest) returns (HelloResponse) {}
+}
+
+message HelloRequest {
+}
+
+message HelloResponse {
+    string response = 1;
+}
