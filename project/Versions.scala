@@ -6,4 +6,5 @@ object Versions {
   val json4sV = "3.5.0"
   val akkaHttpJson4sV = "1.11.0"
   val proteusV = "0.2.4"
+  val netifiV = "0.2.5"
 }

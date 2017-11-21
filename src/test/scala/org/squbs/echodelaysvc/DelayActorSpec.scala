@@ -1,7 +1,6 @@
 package org.squbs.echodelaysvc
 
 import akka.actor.{ActorSystem, Props}
-import akka.http.scaladsl.model.HttpResponse
 import akka.pattern._
 import akka.stream.ActorMaterializer
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit}
@@ -9,12 +8,13 @@ import akka.util.Timeout
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.MapModule
 import org.scalatest.{BeforeAndAfterAll, FunSpecLike, Matchers}
+import org.squbs.echodelaysvc.proto.service.EchoResponse
 import org.squbs.testkit.stress.{LoadActor, LoadStats, StartLoad}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import scala.util.Random
+import scala.util.{Random, Success}
 
 class DelayActorSpec(system: ActorSystem) extends TestKit(system) with ImplicitSender
   with FunSpecLike with Matchers with BeforeAndAfterAll {
@@ -62,11 +62,9 @@ class DelayActorSpec(system: ActorSystem) extends TestKit(system) with ImplicitS
 
       while (running) {
         receiveOne(1 second) match {
-          case r: HttpResponse =>
-            val entityString = Await.result(r.entity.toStrict(1 second).map(_.data.utf8String), 1 second)
-            val result = mapper.readValue(entityString, classOf[Map[String, Any]])
-            val sampled = result("planned-delay").asInstanceOf[Int]
-            val real = result("real-delay").asInstanceOf[Int]
+          case r: EchoResponse =>
+            val sampled = r.plannedDelay
+            val real = r.realDelay
             count += 1
             val delta = real - sampled
             sumDelta += delta
@@ -92,13 +90,9 @@ class DelayActorSpec(system: ActorSystem) extends TestKit(system) with ImplicitS
     }
 
     it ("should report the delay compensation") {
-      actorRef ! CheckCompensate
-      val response = expectMsgType[HttpResponse](1 second)
-      val entityString = Await.result(response.entity.toStrict(1 second).map(_.data.utf8String), 1 second)
-      val result = mapper.readValue(entityString, classOf[Map[String, Any]])
-      val compensate = result("total-compensate")
-      compensate shouldBe a [String]
-      compensate.asInstanceOf[String] should endWith (" ms")
+      val response = actorRef ? CheckCompensate
+      val Success(result: Double) = response.value.get
+      result should be >= 0.0
     }
   }
 }

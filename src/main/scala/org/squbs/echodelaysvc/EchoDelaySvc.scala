@@ -1,10 +1,12 @@
 package org.squbs.echodelaysvc
 
 import akka.actor.Props
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.pattern.ask
 import akka.util.Timeout
+import org.squbs.echodelaysvc.proto.service.EchoResponse
 import org.squbs.unicomplex.RouteDefinition
+import com.trueaccord.scalapb.json.JsonFormat
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -12,7 +14,6 @@ import scala.util.Random
 
 class EchoDelaySvc extends RouteDefinition {
   val delayActor = context.actorOf(Props[DelayActor])
-  delayActor ! UpdateDelayRequest(() => random.nextNegativeExponential(50 millis, 1 second, 20 seconds))
 
   val random = new Random(System.nanoTime)
 
@@ -23,8 +24,8 @@ class EchoDelaySvc extends RouteDefinition {
   def route =
     path("echo"/ Segment) { path =>
       get {
-        onSuccess(delayActor ? ScheduleRequest(System.nanoTime(), path)) {
-          case response: HttpResponse => complete(response)
+        onSuccess((delayActor ? ScheduleRequest(System.nanoTime(), path)).mapTo[EchoResponse]) { response =>
+          complete(HttpEntity(ContentTypes.`application/json`, JsonFormat.toJsonString(response)))
         }
       }
     } ~
@@ -87,7 +88,13 @@ class EchoDelaySvc extends RouteDefinition {
       } ~
       path("delay" / "compensate") {
         get {
-          onSuccess((delayActor ? CheckCompensate).mapTo[HttpResponse]) { complete(_) }
+          onSuccess((delayActor ? CheckCompensate).mapTo[Double]) { response =>
+            complete(HttpEntity(ContentTypes.`application/json`,
+              s"""{
+                 |  "total-compensate" : "$response ms"
+                 |}
+              """.stripMargin))
+          }
         }
       } ~
       path("hello") {

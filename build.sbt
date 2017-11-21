@@ -47,6 +47,7 @@ PB.protocOptions in Compile ++= Seq(
 )
 
 libraryDependencies ++= Seq(
+  "io.netifi.sdk" % "core" % Versions.netifiV,
   "io.netifi.proteus" % "proteus-core" % Versions.proteusV,
   "ch.qos.logback" % "logback-classic" % Versions.logbackClassicV,
   "org.squbs" %% "squbs-unicomplex" % Versions.squbsV,
@@ -57,8 +58,9 @@ libraryDependencies ++= Seq(
   "de.heikoseeberger" %% "akka-http-json4s" % Versions.akkaHttpJson4sV,
   "org.squbs" %% "squbs-testkit" % Versions.squbsV % "test",
   "com.typesafe.akka" %% "akka-http-testkit" % Versions.akkaHttpV % "test",
-  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.1",
-  "io.projectreactor" %% "reactor-scala-extensions" % "0.3.0"
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.8.10",
+  "io.projectreactor" %% "reactor-scala-extensions" % "0.3.1",
+  "com.trueaccord.scalapb" %% "scalapb-json4s" % "0.3.2"
 )
 
 mainClass in (Compile, run) := Some("org.squbs.unicomplex.Bootstrap")

@@ -1,6 +1,6 @@
 package org.squbs.echodelaysvc
 
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import org.scalatest.{FunSpecLike, Matchers}
 import org.squbs.testkit.TestRoute
 
@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 
 class EchoDelaySvcSpec extends FunSpecLike with Matchers with ScalatestRouteTest {
 
-  implicit val timeout = 10.seconds
+  implicit val timeout = RouteTestTimeout(10.seconds)
 
   describe ("The EchoDelaySvc route") {
 
@@ -16,7 +16,7 @@ class EchoDelaySvcSpec extends FunSpecLike with Matchers with ScalatestRouteTest
 
     it ("should provide confirmation for an echo request") {
       Get("/echo/foo") ~> route ~> check {
-        responseAs[String] should include (""""path" : "foo"""")
+        responseAs[String] should include (""""path":"foo"""")
       }
     }
 
