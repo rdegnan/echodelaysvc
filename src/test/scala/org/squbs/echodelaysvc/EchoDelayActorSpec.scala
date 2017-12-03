@@ -29,6 +29,7 @@ class EchoDelayActorSpec(system: ActorSystem) extends TestKit(system) with Impli
     .accountId(Long.MaxValue)
     .accessKey(accessKey)
     .accessToken(accessToken)
+    .executor(_system.dispatcher)
     .group("echodelay.client")
     .destination("client")
     .build()

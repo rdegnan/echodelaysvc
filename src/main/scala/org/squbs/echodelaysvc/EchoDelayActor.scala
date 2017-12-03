@@ -24,6 +24,7 @@ class EchoDelayActor extends EchoDelay with Actor {
     .accountId(Long.MaxValue)
     .accessKey(accessKey)
     .accessToken(accessToken)
+    .executor(context.system.dispatcher)
     .group("echodelay.server")
     .destination("server")
     .build()
