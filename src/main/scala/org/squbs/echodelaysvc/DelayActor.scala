@@ -1,10 +1,11 @@
 package org.squbs.echodelaysvc
 
 import akka.actor.{Actor, ActorRef}
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse}
+import org.squbs.echodelaysvc.proto.service.EchoResponse
 
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.language.postfixOps
+import scala.util.Random
 
 case class UpdateDelayRequest(newDelay: ()=>FiniteDuration, ack: Option[Any] = None)
 case class ScheduleRequest(startTime: Long, echo: String, responder: Option[ActorRef] = None)
@@ -19,7 +20,8 @@ class DelayActor extends Actor {
   import context.dispatcher
 
   val `1ms` = 1000000L
-  var delay: ()=>FiniteDuration = _
+  val random = new Random(System.nanoTime)
+  var delay: ()=>FiniteDuration = () => random.nextNegativeExponential(50 millis, 1 second, 20 seconds)
   var compensate = 0L
 
   def receive = {
@@ -30,12 +32,7 @@ class DelayActor extends Actor {
       val respondTime = targetedRespondTime - compensate
       val origSender = responder.getOrElse(sender())
       if (respondTime - System.nanoTime < `1ms`) { // less than a millis left
-        val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/json`,
-          s"""{
-             |  "path" : "$echo",
-             |  "planned-delay" : ${thisDelay.toMillis},
-             |  "real-delay" : ${(System.nanoTime - startTime) / `1ms`}
-             |}""".stripMargin))
+        val response = EchoResponse(echo, thisDelay.toMillis, (System.nanoTime - startTime) / `1ms`)
         origSender ! response
         compensate += System.nanoTime() - targetedRespondTime
       } else
@@ -46,12 +43,7 @@ class DelayActor extends Actor {
     case Scheduled(respondTime, ScheduleRequest(startTime, echo, responder)) =>
       val current = System.nanoTime()
       compensate += current - respondTime
-      val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/json`,
-        s"""{
-           |  "path" : "$echo",
-           |  "planned-delay" : ${(respondTime - startTime) / `1ms`},
-           |  "real-delay" : ${(current - startTime) / `1ms`}
-           |}""".stripMargin))
+      val response = EchoResponse(echo, (respondTime - startTime) / `1ms`, (current - startTime) / `1ms`)
       responder.foreach(_ ! response)
 
     // Message from route to update the request
@@ -61,12 +53,7 @@ class DelayActor extends Actor {
       ackOption foreach (sender() ! _)
 
     case CheckCompensate =>
-      val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/json`,
-        s"""{
-           |  "total-compensate" : "${compensate.asInstanceOf[Double] / `1ms`} ms"
-           |}
-         """.stripMargin
-      ))
+      val response = compensate.asInstanceOf[Double] / `1ms`
       sender() ! response
   }
 }

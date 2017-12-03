@@ -16,7 +16,6 @@ class EchoDelaySvc extends RouteDefinition {
     Timeout(context.system.settings.config.get[FiniteDuration]("akka.http.server.request-timeout"))
 
   val delayActor = Lookup("/user/echodelaysvc/delayactor")
-  delayActor ! UpdateDelayRequest(() => random.nextNegativeExponential(50 millis, 1 second, 20 seconds))
 
   val random = new Random(System.nanoTime)
 
@@ -80,7 +79,13 @@ class EchoDelaySvc extends RouteDefinition {
       } ~
       path("delay" / "compensate") {
         get {
-          onSuccess((delayActor ? CheckCompensate).mapTo[HttpResponse]) { complete(_) }
+          onSuccess((delayActor ? CheckCompensate).mapTo[Double]) { response =>
+            complete(HttpEntity(ContentTypes.`application/json`,
+              s"""{
+                 |  "total-compensate" : "$response ms"
+                 |}
+              """.stripMargin))
+          }
         }
       } ~
       path("hello") {

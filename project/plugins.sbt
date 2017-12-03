@@ -10,4 +10,8 @@ addSbtPlugin("org.xerial.sbt" % "sbt-pack" % "0.7.9")
 
 addSbtPlugin("se.marcuslonnberg" % "sbt-docker" % "1.5.0")
 
+addSbtPlugin("com.thesamet" % "sbt-protoc" % "0.99.12")
+
+libraryDependencies += "com.trueaccord.scalapb" %% "compilerplugin" % "0.6.6"
+
 resolvers += Resolver.sonatypeRepo("releases")

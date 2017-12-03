@@ -1,10 +1,12 @@
 package org.squbs.echodelaysvc
 
 import akka.NotUsed
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, HttpResponse}
 import akka.pattern.ask
 import akka.stream.scaladsl.Flow
 import akka.util.Timeout
+import com.trueaccord.scalapb.json.JsonFormat
+import org.squbs.echodelaysvc.proto.service.EchoResponse
 import org.squbs.unicomplex.FlowDefinition
 import org.squbs.util.ConfigUtil._
 
@@ -17,7 +19,10 @@ class EchoFlow extends FlowDefinition {
 
   val delayActor = Lookup("/user/echodelaysvc/delayactor")
 
-  override def flow: Flow[HttpRequest, HttpResponse, NotUsed] = Flow[HttpRequest].mapAsync(1) { req =>
-      (delayActor ? ScheduleRequest(System.nanoTime(), req.uri.path.tail.toString)).mapTo[HttpResponse]
-  }
+  override def flow: Flow[HttpRequest, HttpResponse, NotUsed] =
+    Flow[HttpRequest].mapAsync(1) { req =>
+      (delayActor ? ScheduleRequest(System.nanoTime(), req.uri.path.tail.toString)).mapTo[EchoResponse]
+    }.map { response =>
+      HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, JsonFormat.toJsonString(response)))
+    }
 }

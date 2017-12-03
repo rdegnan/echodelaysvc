@@ -15,7 +15,39 @@ scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-encoding", "ut
 
 Revolver.settings
 
+val downloadProteus = {
+  val proteusArtifactId = "proteus-java"
+
+  val proteusExeFileName = {
+    val os = if (scala.util.Properties.isMac) "osx-x86_64"
+    else if (scala.util.Properties.isWin) "windows-x86_64"
+    else "linux-x86_64"
+
+    s"proteus-java-${Versions.proteusV}-$os.exe"
+  }
+
+  val remoteUrl = url(s"http://jcenter.bintray.com/io/netifi/proteus/$proteusArtifactId/${Versions.proteusV}/$proteusExeFileName")
+  val exe: File = IO.temporaryDirectory / proteusExeFileName
+  if (!exe.exists()) {
+    println("proteus protoc plugin (for Java) does not exist. Downloading.")
+    IO.download(remoteUrl, exe)
+    exe.setExecutable(true)
+  }
+  exe
+}
+
+PB.targets in Compile := Seq(
+  PB.gens.java -> (sourceManaged in Compile).value,
+  scalapb.gen(grpc=false, javaConversions=true) -> (sourceManaged in Compile).value,
+  protocbridge.BuiltinGenerator("proteus") -> (sourceManaged in Compile).value
+)
+
+PB.protocOptions in Compile ++= Seq(
+  s"--plugin=protoc-gen-proteus=$downloadProteus"
+)
+
 libraryDependencies ++= Seq(
+  "io.netifi.proteus" % "proteus-core" % Versions.proteusV,
   "ch.qos.logback" % "logback-classic" % Versions.logbackClassicV,
   "org.squbs" %% "squbs-unicomplex" % Versions.squbsV,
   "org.squbs" %% "squbs-actormonitor" % Versions.squbsV,
@@ -25,7 +57,10 @@ libraryDependencies ++= Seq(
   "de.heikoseeberger" %% "akka-http-json4s" % Versions.akkaHttpJson4sV,
   "org.squbs" %% "squbs-testkit" % Versions.squbsV % "test",
   "com.typesafe.akka" %% "akka-http-testkit" % Versions.akkaHttpV % "test",
-  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.1"
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.8.10",
+  "io.projectreactor" %% "reactor-scala-extensions" % "0.3.1",
+  "com.trueaccord.scalapb" %% "scalapb-json4s" % "0.3.2",
+  "io.rsocket" % "rsocket-transport-netty" % "0.9.19"
 )
 
 mainClass in (Compile, run) := Some("org.squbs.unicomplex.Bootstrap")
