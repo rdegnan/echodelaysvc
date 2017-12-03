@@ -9,7 +9,7 @@ scalaVersion := "2.11.8"
 
 crossPaths := false
 
-resolvers ++= Seq(Resolver.sonatypeRepo("snapshots"), Resolver.jcenterRepo)
+resolvers ++= Seq(Resolver.sonatypeRepo("snapshots"), Resolver.jcenterRepo, Resolver.mavenLocal)
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8", "-language:postfixOps")
 
