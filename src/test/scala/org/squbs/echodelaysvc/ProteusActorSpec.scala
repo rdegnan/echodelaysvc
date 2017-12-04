@@ -1,7 +1,5 @@
 package org.squbs.echodelaysvc
 
-import java.util.function.Consumer
-
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.config.{Config, ConfigFactory}
@@ -12,9 +10,6 @@ import org.squbs.echodelaysvc.proto.EchoDelayClient
 import org.squbs.echodelaysvc.proto.service.EchoRequest
 import org.squbs.testkit.CustomTestKit
 import org.squbs.unicomplex.JMX
-import reactor.core.scala.publisher.{Flux, Mono}
-import reactor.ipc.netty.options.ClientOptions
-import reactor.ipc.netty.tcp.TcpClient
 
 import scala.language.postfixOps
 
@@ -38,9 +33,9 @@ class ProteusActorSpec extends CustomTestKit(ProteusActorSpec.config) with Async
     .transport(TcpClientTransport.create(8801))
     .start()
     .block()
+  val client = new EchoDelayClient(socket)
 
   it should "respond to the echo requests" in {
-    val client = new EchoDelayClient(socket)
     val responseFuture = Source(1 to 10)
       .flatMapMerge(10, i => Source.fromPublisher(client.echo(EchoRequest.toJavaProto(EchoRequest(i.toString)))))
       .runWith(Sink.seq)
@@ -48,5 +43,17 @@ class ProteusActorSpec extends CustomTestKit(ProteusActorSpec.config) with Async
     responseFuture.map { seq =>
       seq should have size 10
     }
+  }
+
+  it should "respond to a stream of echo requests" in {
+    val responseFlux = client.echoStream(Source(1 to 10)
+      .map(i => EchoRequest.toJavaProto(EchoRequest(i.toString)))
+      .runWith(Sink.asPublisher(fanout = false)))
+
+    Source.fromPublisher(responseFlux)
+      .runWith(Sink.seq)
+      .map { seq =>
+        seq should have size 10
+      }
   }
 }

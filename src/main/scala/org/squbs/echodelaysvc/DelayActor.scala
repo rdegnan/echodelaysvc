@@ -35,9 +35,10 @@ class DelayActor extends Actor {
         val response = EchoResponse(echo, thisDelay.toMillis, (System.nanoTime - startTime) / `1ms`)
         origSender ! response
         compensate += System.nanoTime() - targetedRespondTime
-      } else
+      } else {
         context.system.scheduler.scheduleOnce((respondTime - System.nanoTime()) nanos, self,
           Scheduled(targetedRespondTime, req.copy(responder = Some(origSender))))
+      }
 
     // Message from scheduler
     case Scheduled(respondTime, ScheduleRequest(startTime, echo, responder)) =>

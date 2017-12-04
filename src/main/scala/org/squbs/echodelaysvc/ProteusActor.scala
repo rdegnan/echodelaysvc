@@ -4,21 +4,26 @@ import java.util.function.Consumer
 
 import akka.actor.Actor
 import akka.pattern.ask
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Sink, Source}
 import akka.util.Timeout
-import io.netty.channel.nio.{NioEventLoop, NioEventLoopGroup}
+import io.netty.channel.nio.NioEventLoopGroup
 import io.rsocket.transport.netty.server.TcpServerTransport
 import io.rsocket.{ConnectionSetupPayload, RSocket, RSocketFactory, SocketAcceptor}
+import org.reactivestreams.Publisher
 import org.squbs.echodelaysvc.proto.service.EchoResponse
 import org.squbs.echodelaysvc.proto.{EchoDelay, EchoDelayServer, EchoRequest}
+import reactor.core.publisher.Flux
 import reactor.core.scala.publisher.Mono
-import reactor.ipc.netty.options.{ClientOptions, ServerOptions}
-import reactor.ipc.netty.tcp.{TcpClient, TcpServer}
+import reactor.ipc.netty.options.ServerOptions
+import reactor.ipc.netty.tcp.TcpServer
+import org.squbs.util.ConfigUtil._
 
 import scala.concurrent.duration.FiniteDuration
 
 class ProteusActor extends EchoDelay with Actor {
   import context.dispatcher
-  import org.squbs.util.ConfigUtil._
+  implicit val mat = ActorMaterializer()
 
   implicit val askTimeout: Timeout =
     Timeout(context.system.settings.config.get[FiniteDuration]("akka.http.server.request-timeout"))
@@ -45,6 +50,17 @@ class ProteusActor extends EchoDelay with Actor {
     Mono.fromFuture((delayActor ? ScheduleRequest(System.nanoTime(), message.getPath)).mapTo[EchoResponse])
       .map(EchoResponse.toJavaProto(_))
       .asJava()
+  }
+
+  override def echoStream(messages: Publisher[EchoRequest]) = {
+    val publisher = Source.fromPublisher(messages)
+      .mapAsync(10) { message =>
+        (delayActor ? ScheduleRequest(System.nanoTime(), message.getPath)).mapTo[EchoResponse]
+      }
+      .map(EchoResponse.toJavaProto(_))
+      .runWith(Sink.asPublisher(fanout = false))
+
+    Flux.from(publisher)
   }
 
   def receive = {
