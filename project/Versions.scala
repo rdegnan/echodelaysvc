@@ -1,9 +1,9 @@
 object Versions {
   val akkaV = "2.4.19"
   val akkaHttpV = "10.0.10"
-  val squbsV = "0.9.2"
+  val squbsV = "0.9.3"
   val logbackClassicV = "1.1.3"
   val json4sV = "3.5.0"
   val akkaHttpJson4sV = "1.11.0"
-  val proteusV = "0.2.4"
+  val proteusV = "0.4.3"
 }

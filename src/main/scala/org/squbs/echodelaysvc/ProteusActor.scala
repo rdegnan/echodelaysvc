@@ -7,6 +7,7 @@ import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import akka.util.Timeout
+import io.netty.buffer.ByteBuf
 import io.netty.channel.nio.NioEventLoopGroup
 import io.rsocket.transport.netty.server.TcpServerTransport
 import io.rsocket.{ConnectionSetupPayload, RSocket, RSocketFactory, SocketAcceptor}
@@ -46,13 +47,13 @@ class ProteusActor extends EchoDelay with Actor {
     .start()
     .block()
 
-  override def echo (message: EchoRequest) = {
+  override def echo (message: EchoRequest, metadata: ByteBuf) = {
     Mono.fromFuture((delayActor ? ScheduleRequest(System.nanoTime(), message.getPath)).mapTo[EchoResponse])
       .map(EchoResponse.toJavaProto(_))
       .asJava()
   }
 
-  override def echoStream(messages: Publisher[EchoRequest]) = {
+  override def echoStream(messages: Publisher[EchoRequest], metadata: ByteBuf) = {
     val publisher = Source.fromPublisher(messages)
       .mapAsync(10) { message =>
         (delayActor ? ScheduleRequest(System.nanoTime(), message.getPath)).mapTo[EchoResponse]

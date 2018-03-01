@@ -9,21 +9,21 @@ scalaVersion := "2.11.8"
 
 crossPaths := false
 
-resolvers += Resolver.sonatypeRepo("snapshots")
+resolvers ++= Seq(Resolver.sonatypeRepo("snapshots"), Resolver.jcenterRepo)
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-encoding", "utf8", "-language:postfixOps")
 
 Revolver.settings
 
 val downloadProteus = {
-  val proteusArtifactId = "proteus-java"
+  val proteusArtifactId = "protobuf-rpc"
 
   val proteusExeFileName = {
     val os = if (scala.util.Properties.isMac) "osx-x86_64"
     else if (scala.util.Properties.isWin) "windows-x86_64"
     else "linux-x86_64"
 
-    s"proteus-java-${Versions.proteusV}-$os.exe"
+    s"$proteusArtifactId-${Versions.proteusV}-$os.exe"
   }
 
   val remoteUrl = url(s"http://jcenter.bintray.com/io/netifi/proteus/$proteusArtifactId/${Versions.proteusV}/$proteusExeFileName")
@@ -47,7 +47,7 @@ PB.protocOptions in Compile ++= Seq(
 )
 
 libraryDependencies ++= Seq(
-  "io.netifi.proteus" % "proteus-core" % Versions.proteusV,
+  "io.netifi.proteus" % "client" % Versions.proteusV,
   "ch.qos.logback" % "logback-classic" % Versions.logbackClassicV,
   "org.squbs" %% "squbs-unicomplex" % Versions.squbsV,
   "org.squbs" %% "squbs-actormonitor" % Versions.squbsV,
@@ -58,9 +58,9 @@ libraryDependencies ++= Seq(
   "org.squbs" %% "squbs-testkit" % Versions.squbsV % "test",
   "com.typesafe.akka" %% "akka-http-testkit" % Versions.akkaHttpV % "test",
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.8.10",
-  "io.projectreactor" %% "reactor-scala-extensions" % "0.3.1",
+  "io.projectreactor" %% "reactor-scala-extensions" % "0.3.2",
   "com.trueaccord.scalapb" %% "scalapb-json4s" % "0.3.2",
-  "io.rsocket" % "rsocket-transport-netty" % "0.9.19"
+  "io.rsocket" % "rsocket-transport-netty" % "0.10.3"
 )
 
 mainClass in (Compile, run) := Some("org.squbs.unicomplex.Bootstrap")
