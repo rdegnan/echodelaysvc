@@ -5,7 +5,7 @@ version := "0.1.0-SNAPSHOT"
 
 organization in ThisBuild := "org.squbs.echodelaysvc"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.4"
 
 crossPaths := false
 
@@ -25,7 +25,7 @@ libraryDependencies ++= Seq(
   "de.heikoseeberger" %% "akka-http-json4s" % Versions.akkaHttpJson4sV,
   "org.squbs" %% "squbs-testkit" % Versions.squbsV % "test",
   "com.typesafe.akka" %% "akka-http-testkit" % Versions.akkaHttpV % "test",
-  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.6.1"
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % Versions.jacksonV
 )
 
 mainClass in (Compile, run) := Some("org.squbs.unicomplex.Bootstrap")
@@ -35,15 +35,15 @@ fork in Test := true
 // enable scalastyle on compile
 lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
-compileScalastyle := org.scalastyle.sbt.ScalastylePlugin.scalastyle.in(Compile).toTask("").value
+compileScalastyle := scalastyle.in(Compile).toTask("").value
 
-(compile in Compile) <<= (compile in Compile) dependsOn compileScalastyle
+(compile in Compile) := ((compile in Compile) dependsOn compileScalastyle).value
 
 coverageMinimum := 100
 
 coverageFailOnMinimum := true
 
-xerial.sbt.Pack.packSettings
+enablePlugins(PackPlugin)
 
 packMain := Map("run" -> "org.squbs.unicomplex.Bootstrap")
 

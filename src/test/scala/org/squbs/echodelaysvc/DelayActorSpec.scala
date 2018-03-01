@@ -32,7 +32,7 @@ class DelayActorSpec(system: ActorSystem) extends TestKit(system) with ImplicitS
   mapper.registerModule(new MapModule {})
 
   override def afterAll() = {
-    system.shutdown()
+    system.terminate()
   }
 
   describe ("The delay actor") {
